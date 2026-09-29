@@ -1,0 +1,18 @@
+[workspace]
+resolver = "3"
+members = ["crates/language"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.metadata.crane]
+name = "language"
+
+[workspace.dependencies]
+clap = { version = "=4.6.6", features = ["derive", "env", "string"] }
+ddd = { git = "https://github.com/clemenscodes/ddd", tag = "v0.3.0" }

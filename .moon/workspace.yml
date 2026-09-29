@@ -1,0 +1,19 @@
+$schema: './cache/schemas/workspace.json'
+
+telemetry: false
+
+hasher:
+  walkStrategy: 'glob'
+  ignorePatterns:
+    - '**/.direnv/**'
+    - '**/.git/**'
+    - '**/.moon/cache/**'
+    - 'build/**'
+
+vcs:
+  defaultBranch: 'main'
+  client: 'git'
+  sync: false
+
+projects:
+  - 'moon.yml'
