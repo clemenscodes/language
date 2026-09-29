@@ -69,7 +69,7 @@ value object. A `Term` keeps its spelling when its definition changes, so it is 
 entity identified by that spelling.
 
 `Languages` comes about from the contexts and the foreign languages of a repository.
-It adds Rust's own words and the foreign languages this library knows, and the only
+It adds Rust's own words and nothing else, and the only
 way that can fail is a vocabulary of the library that is not a vocabulary, which is
 why the one error it can end in is the `Error` of a `Language`.
 

@@ -5,13 +5,14 @@ There is one language per bounded context, and a context is a directory under a 
 uses this library and live in that repository's own crate. `core/languages` is where
 the library joins them with its own.
 
-`core/languages/foreign` is one module per third party crate, each a flat list of the
-words that crate brought along. A source is judged against the language of a foreign
-crate when its own `Cargo.toml` names that crate, which the gate reads rather than
-keeping a second list beside it. A crate that loses a dependency loses its words in
-the same act. A repository hands over foreign languages of its own beside these, and a
-context may name one it uses without a manifest, which is how a context of another
-programming language gets the words of that language.
+The library knows no third party crate. A repository hands over one foreign language
+per third party crate it uses, each a flat list of the words that crate brought along,
+and `core/languages/foreign` is only the type they are made of. A source is judged
+against the language of a foreign crate when its own `Cargo.toml` names that crate,
+which the gate reads rather than keeping a second list beside it. A crate that loses a
+dependency loses its words in the same act. A context may also name a foreign language
+it uses without a manifest, which is how a context of another programming language
+gets the words of that language.
 
 `core/languages/rust` is Rust's own words, which have no definitions here because
 `fn` means nothing in a domain and is only allowed. It is the anti corruption layer,

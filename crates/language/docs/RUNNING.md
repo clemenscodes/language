@@ -30,7 +30,7 @@ The library publishes six names.
 | `Language` | a vocabulary, built with `try_define` for a term and its definition and `try_admit` for a word without one, and joined with another by `\|` |
 | `Context` | one directory and its language, from `(directory, language)` under `crates`, from `(root, directory, language)` under any root, and from `(context, names)` with the names of foreign languages it may also use |
 | `Foreign` | the words of one third party crate, from `(name, language)` |
-| `Languages` | every language of a repository, from `(contexts, foreign)`, joined with Rust's own words and the foreign languages the library knows |
+| `Languages` | every language of a repository, from `(contexts, foreign)`, joined with Rust's own words |
 | `CommandLine` | the arguments, parsed by clap, and `try_respond` |
 | `Error` | why a language could not come about |
 

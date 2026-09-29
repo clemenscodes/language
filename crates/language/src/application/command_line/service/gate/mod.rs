@@ -420,7 +420,9 @@ mod tests {
                 Ok(String::from("[dependencies]\nblowfish.workspace = true\n"))
             }
         }
-        let languages = Languages::try_from((Vec::new(), Vec::new())).unwrap();
+        let blowfish = Language::default().try_admit(["Blowfish"]).unwrap();
+        let own_foreign = vec![Foreign::from(("blowfish", blowfish))];
+        let languages = Languages::try_from((Vec::new(), own_foreign)).unwrap();
         let gate = Gate::from((languages, Box::new(Manifest) as Box<dyn Reader>));
         let path = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/src/lib.rs"));
 

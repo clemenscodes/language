@@ -51,13 +51,9 @@ impl From<(Language, Vec<Context>, Vec<Foreign>)> for Languages {
 impl TryFrom<(Vec<Context>, Vec<Foreign>)> for Languages {
     type Error = Error;
 
-    fn try_from(
-        (contexts, own_foreign): (Vec<Context>, Vec<Foreign>),
-    ) -> Result<Self, Self::Error> {
+    fn try_from((contexts, foreign): (Vec<Context>, Vec<Foreign>)) -> Result<Self, Self::Error> {
         let rust = Rust::try_from(())?;
         let shared_language = rust.language().clone();
-        let mut foreign = Foreign::try_gather()?;
-        foreign.extend(own_foreign);
         Ok(Self::from((shared_language, contexts, foreign)))
     }
 }
@@ -67,18 +63,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn languages_of_no_foreign_language_of_their_own_hold_every_foreign_language_of_the_library() {
+    fn the_library_knows_no_foreign_language_the_repository_did_not_hand_over() {
         let contexts = Vec::new();
         let own_foreign = Vec::new();
 
         let languages = Languages::try_from((contexts, own_foreign)).unwrap();
 
-        let count = languages.foreign().len();
-        assert_eq!(count, 21);
+        assert!(languages.foreign().is_empty());
     }
 
     #[test]
-    fn a_foreign_language_of_the_repository_joins_the_foreign_languages_of_the_library() {
+    fn a_foreign_language_the_repository_hands_over_is_one_of_the_languages() {
         let contexts = Vec::new();
         let lighthouse = Language::default().try_admit(["Lamp"]).unwrap();
         let own_foreign = vec![Foreign::from(("lighthouse", lighthouse))];
