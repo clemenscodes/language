@@ -1,3 +1,4 @@
+use crate::core::language::vocabulary::name;
 use crate::core::language::vocabulary::word;
 use std::error;
 use std::fmt;
@@ -5,12 +6,14 @@ use std::fmt;
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Error {
     Word { word: word::Error },
+    Name { name: name::Error },
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Word { word } => write!(formatter, "{word}"),
+            Self::Name { name } => write!(formatter, "{name}"),
         }
     }
 }
@@ -20,6 +23,12 @@ impl error::Error for Error {}
 impl From<word::Error> for Error {
     fn from(word: word::Error) -> Self {
         Self::Word { word }
+    }
+}
+
+impl From<name::Error> for Error {
+    fn from(name: name::Error) -> Self {
+        Self::Name { name }
     }
 }
 

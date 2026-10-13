@@ -14,9 +14,22 @@ dependency loses its words in the same act. A context may also name a foreign la
 it uses without a manifest, which is how a context of another programming language
 gets the words of that language.
 
-`core/languages/rust` is Rust's own words, which have no definitions here because
-`fn` means nothing in a domain and is only allowed. It is the anti corruption layer,
-and it exists so that the platform's vocabulary never has to enter the domain's.
+`core/languages/rust` is the language of Rust itself, which has no definitions here
+because `fn` means nothing in a domain and is only allowed. It is the anti corruption
+layer, and it exists so that the platform's vocabulary never has to enter the
+domain's.
+
+It has two lists. `WORDS` are the words of Rust on their own, the keywords and the
+primitive types, and each of them is allowed wherever it occurs, inside any
+identifier. `NAMES` are identifiers of the standard library and of the compiler, such
+as `is_empty`, `as_bytes`, `Vec` and `should_panic`, and each of them is allowed only
+as the identifier it is. So `text.is_empty()` passes on the words of Rust alone,
+while `fn is`, `fn is_port` and `fn has_files` pass only in a context whose language
+has `is`, `port`, `has` and `files`.
+
+A word that only the standard library uses is not a word every domain may use, and
+that is why the two are kept apart. A list of single words let `is` through because
+`is_empty` exists, and with it every `fn is` any crate defined.
 
 Rust is shared by every context. A context's own language and its foreign languages
 are not.
@@ -37,6 +50,38 @@ A word is checked against a language in its own case and in its own plural, so
 `Word::stem` is where that is decided, by the three endings English uses, and it
 folds nothing else together. A word whose stem no language has is an error like any
 other.
+
+## What is one name
+
+An identifier is one name, and a name is the words it is made of in their order,
+taken apart the same way a source is. Two writings of the same words are the same
+name, so `as_ref` and `AsRef` are one name, while `is_empty` and `empty_is` are two.
+A name has no plural, so the name `file` does not let `files` through.
+
+A source is judged name by name. A name its language admits is let through, and its
+words are not judged at all. Every other name is taken apart and each of its words
+has to be in the language. A language admits a name with `try_admit_names`, which a
+foreign language can use as well as Rust does.
+
+## Where the names of Rust come from
+
+`NAMES` was measured from the source of the standard library that the toolchain of
+this repository ships, 1.98.1. It is every identifier that `core`, `alloc` and `std`
+declare as public and stable, every macro the compiler builds in, every public module
+and every public re-export, whose words the earlier list of single words of Rust
+already admitted. So no identifier passes now that did not pass before.
+
+Eight names come from the compiler rather than from that source. `std` and `core` are
+the crates every source can name, `main` is the function a program starts with, `repr`,
+`should_panic` and `ignore` are attributes, `feature` is the key of a `cfg`, and `b`
+is the prefix of a byte literal.
+
+`is` was left out, although the standard library declares it for `Any` and for
+`Error`, because a lone `is` is the word this split exists to keep out of a domain.
+
+`WORDS` keeps six more words that are neither keywords nor primitive types, `divide`,
+`dividend`, `divisor`, `lib`, `tests` and `zeroes`. The earlier list had them, and no
+identifier of the standard library contains them.
 
 ## What is not judged
 

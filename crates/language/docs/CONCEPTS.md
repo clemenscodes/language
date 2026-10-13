@@ -8,9 +8,10 @@ uses.
 ```
 core            the domain and the ports it is driven through
   language      a vocabulary, and the rule a source either satisfies or does not
-    vocabulary  a set of words, with the difference and the union of two
+    vocabulary  a set of words and names, with the difference and the union of two
       word      one word, kept verbatim, compared without regard to case
-      source    a Rust file taken apart into words, past strings, comments and tests
+      name      one identifier, the words it is made of in their order
+      source    a Rust file taken apart into names, past strings, comments and tests
       term      a spelling and its definition
         spelling     the words one term is made of, and its identity
         definition   what a term means
@@ -38,10 +39,12 @@ crate, and `Book`, `Dependencies`, `Reader` and `Writer` within it. `application
 publishes `CommandLine`. `infra` publishes no type at all, only the two functions that
 yield the adapter it chose, so nobody outside it can name `FileSystem`.
 
-A `Source` gives the words a text contains. A `Language` gives the words it allows.
-The difference of the two is the errors of the source, which is why `Vocabulary`
-implements `Sub`, and why two languages are joined with `BitOr` rather than with a
-name somebody invented.
+A `Source` gives the names a text contains, and each `Name` gives the words it is
+made of. A `Language` gives the words it allows and the names it allows. A name the
+language allows is let through without being taken apart, and the words of every
+other name are judged one by one. The words that are left over are the errors of the
+source, which is why `Vocabulary` implements `Sub`, and why two languages are joined
+with `BitOr` rather than with a name somebody invented.
 
 `Language` is a `Specification` over a `Source`, so the rule of this library is
 one method that decides whether a source is in the language.
@@ -61,7 +64,8 @@ could not find again.
 ## What follows from the rules
 
 A term without a definition is not a term, a spelling without a word is not a
-spelling, and an empty word is not a word, so every conversion that can fail is
+spelling, an empty word is not a word and a name without a word is not a name, so
+every conversion that can fail is
 `TryFrom` and the error names what could not be made.
 
 A `Language` has no identity and two languages are joined into a third, so it is a
@@ -69,7 +73,7 @@ value object. A `Term` keeps its spelling when its definition changes, so it is 
 entity identified by that spelling.
 
 `Languages` comes about from the contexts and the foreign languages of a repository.
-It adds Rust's own words and nothing else, and the only
+It adds Rust's own words and names and nothing else, and the only
 way that can fail is a vocabulary of the library that is not a vocabulary, which is
 why the one error it can end in is the `Error` of a `Language`.
 

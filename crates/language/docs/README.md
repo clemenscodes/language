@@ -3,7 +3,9 @@
 The gate turns away an identifier made of a word the context it is in does not have.
 
 It takes Rust sources, takes every identifier apart into the words it is made of,
-and reports the words that none of the languages of that source has. Three kinds of
+and reports the words that none of the languages of that source has. An identifier
+a language admits as a name, such as `is_empty` of the standard library, is let
+through without being taken apart. Three kinds of
 language are merged for one source, the one of its own context, Rust's own
 vocabulary, and one for each third party crate its `Cargo.toml` names.
 

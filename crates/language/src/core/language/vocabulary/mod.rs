@@ -1,12 +1,14 @@
 mod source;
 
 pub(crate) mod error;
+pub(crate) mod name;
 pub(crate) mod term;
 pub(crate) mod word;
 
 pub(crate) use error::Error;
 pub(crate) use term::Term;
 
+pub(super) use name::Name;
 pub(super) use source::Source;
 pub(super) use word::Word;
 
@@ -18,6 +20,7 @@ use std::ops::{BitOr, Sub};
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub(crate) struct Vocabulary {
     words: BTreeSet<Word>,
+    names: BTreeSet<Name>,
 }
 
 impl Layered for Vocabulary {
@@ -28,7 +31,7 @@ impl ValueObject for Vocabulary {}
 
 impl Vocabulary {
     pub(crate) fn is_empty(&self) -> bool {
-        self.words.is_empty()
+        self.words.is_empty() && self.names.is_empty()
     }
 
     pub(super) fn define(self, term: &Term) -> Self {
@@ -37,7 +40,25 @@ impl Vocabulary {
             let taken_words = word.clone();
             words.insert(taken_words);
         }
-        Self { words }
+        let names = self.names;
+        Self { words, names }
+    }
+
+    pub(super) fn try_admit_names<IntoNames, IntoName>(
+        self,
+        parts: IntoNames,
+    ) -> Result<Self, Error>
+    where
+        IntoNames: IntoIterator<Item = IntoName>,
+        IntoName: TryInto<Name, Error = name::Error>,
+    {
+        let words = self.words;
+        let mut names = self.names;
+        for parts in parts {
+            let name = parts.try_into()?;
+            names.insert(name);
+        }
+        Ok(Self { words, names })
     }
 
     pub(super) fn try_admit<IntoWords, IntoWord>(self, parts: IntoWords) -> Result<Self, Error>
@@ -55,7 +76,11 @@ impl Vocabulary {
     }
 
     pub(super) fn unknown_vocabulary(&self, source: &Source) -> Self {
-        let own_language: Self = source.into_iter().cloned().collect();
+        let unknown_names = source
+            .names()
+            .iter()
+            .filter(|name| !self.names.contains(name));
+        let own_language: Self = unknown_names.flatten().cloned().collect();
         let language = &own_language - self;
         let unknown = language
             .words
@@ -73,7 +98,8 @@ impl Vocabulary {
 impl FromIterator<Word> for Vocabulary {
     fn from_iter<IntoWords: IntoIterator<Item = Word>>(parts: IntoWords) -> Self {
         let words = parts.into_iter().collect();
-        Self { words }
+        let names = BTreeSet::new();
+        Self { words, names }
     }
 }
 
@@ -82,7 +108,8 @@ impl Sub for &Vocabulary {
 
     fn sub(self, vocabulary: Self) -> Self::Output {
         let words = self.words.difference(&vocabulary.words).cloned().collect();
-        Vocabulary { words }
+        let names = self.names.difference(&vocabulary.names).cloned().collect();
+        Vocabulary { words, names }
     }
 }
 
@@ -91,7 +118,8 @@ impl BitOr for &Vocabulary {
 
     fn bitor(self, vocabulary: Self) -> Self::Output {
         let words = self.words.union(&vocabulary.words).cloned().collect();
-        Vocabulary { words }
+        let names = self.names.union(&vocabulary.names).cloned().collect();
+        Vocabulary { words, names }
     }
 }
 
@@ -127,7 +155,8 @@ mod tests {
             Word::try_from("Season").unwrap(),
             Word::try_from("Profile").unwrap(),
         ]);
-        assert_eq!(vocabulary, Vocabulary { words });
+        let names = BTreeSet::new();
+        assert_eq!(vocabulary, Vocabulary { words, names });
     }
 
     #[test]
@@ -138,7 +167,8 @@ mod tests {
         let vocabulary: Vocabulary = [lower_word, upper_word].into_iter().collect();
 
         let words = BTreeSet::from([Word::try_from("seat").unwrap()]);
-        assert_eq!(vocabulary, Vocabulary { words });
+        let names = BTreeSet::new();
+        assert_eq!(vocabulary, Vocabulary { words, names });
     }
 
     #[test]
@@ -201,10 +231,12 @@ mod tests {
         let words = &own_language - &language;
 
         let anchor_words = BTreeSet::from([Word::try_from("Anchor").unwrap()]);
+        let names = BTreeSet::new();
         assert_eq!(
             words,
             Vocabulary {
-                words: anchor_words
+                words: anchor_words,
+                names
             }
         );
     }
@@ -245,12 +277,44 @@ mod tests {
     }
 
     #[test]
+    fn an_identifier_admitted_as_a_name_is_no_error() {
+        let vocabulary = Vocabulary::default();
+
+        let language = vocabulary.try_admit_names(["is_empty"]).unwrap();
+
+        let unknown_vocabulary = language.unknown_vocabulary(&Source::from("text.is_empty()"));
+        let unknown_text = unknown_vocabulary.to_string();
+        assert_eq!(unknown_text, "text");
+    }
+
+    #[test]
+    fn a_word_of_an_identifier_admitted_as_a_name_is_no_word_of_its_own() {
+        let vocabulary = Vocabulary::default();
+
+        let language = vocabulary.try_admit_names(["is_empty"]).unwrap();
+
+        let unknown_vocabulary = language.unknown_vocabulary(&Source::from("fn is_port() {}"));
+        let unknown_text = unknown_vocabulary.to_string();
+        assert_eq!(unknown_text, "fn, is, port");
+    }
+
+    #[test]
+    fn letters_that_are_no_name_are_admitted_by_no_vocabulary() {
+        let vocabulary = Vocabulary::default();
+
+        let response = vocabulary.try_admit_names(["is empty"]);
+
+        assert!(response.is_err());
+    }
+
+    #[test]
     fn a_vocabulary_is_shown_as_its_words_apart_by_a_comma() {
         let words = BTreeSet::from([
             Word::try_from("seat").unwrap(),
             Word::try_from("chest").unwrap(),
         ]);
-        let vocabulary = Vocabulary { words };
+        let names = BTreeSet::new();
+        let vocabulary = Vocabulary { words, names };
 
         let vocabulary_text = vocabulary.to_string();
 

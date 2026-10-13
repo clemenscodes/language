@@ -1,10 +1,12 @@
+use crate::core::language::vocabulary::name::Name;
 use crate::core::language::vocabulary::word::Word;
 use ddd::{DomainLayer, Layered, ValueObject};
+use std::iter::Flatten;
 use std::slice::Iter;
 
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub(crate) struct Source {
-    words: Vec<Word>,
+    names: Vec<Name>,
 }
 
 impl Layered for Source {
@@ -157,59 +159,31 @@ impl Source {
         }
     }
 
-    fn words(text: &str) -> Vec<Word> {
-        let letters: Vec<char> = text.chars().collect();
-        let mut pieces = Vec::new();
-        let mut current = String::new();
-        let mut position = 0;
-        while position < letters.len() {
-            let letter = letters[position];
-            let next_letter = letters.get(position + 1).copied();
-            position += 1;
-            if !letter.is_ascii_alphanumeric() {
-                let piece = std::mem::take(&mut current);
-                if !piece.is_empty() {
-                    pieces.push(piece);
-                }
-                continue;
-            }
-            if letter.is_ascii_uppercase() {
-                let last_letter = current.chars().last();
-                let after_lower = last_letter.is_some_and(|letter| letter.is_ascii_lowercase());
-                let after_digit = last_letter.is_some_and(|letter| letter.is_ascii_digit());
-                let before_lower = next_letter.is_some_and(|next| next.is_ascii_lowercase());
-                let word_start = before_lower && !current.is_empty();
-                if after_lower || after_digit || word_start {
-                    let piece = std::mem::take(&mut current);
-                    pieces.push(piece);
-                }
-            }
-            current.push(letter);
-        }
-        if !current.is_empty() {
-            pieces.push(current);
-        }
-        pieces
-            .iter()
-            .filter_map(|piece| Word::try_from(piece.as_str()).ok())
+    fn split(text: &str) -> Vec<Name> {
+        text.split(|letter: char| !letter.is_ascii_alphanumeric() && letter != '_')
+            .filter_map(|identifier| Name::try_from(identifier).ok())
             .collect()
+    }
+
+    pub(super) fn names(&self) -> &[Name] {
+        &self.names
     }
 }
 
 impl From<&str> for Source {
     fn from(text: &str) -> Self {
         let code = Self::code(text);
-        let words = Self::words(&Self::strip(code));
-        Self { words }
+        let names = Self::split(&Self::strip(code));
+        Self { names }
     }
 }
 
 impl<'a> IntoIterator for &'a Source {
     type Item = &'a Word;
-    type IntoIter = Iter<'a, Word>;
+    type IntoIter = Flatten<Iter<'a, Name>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.words.iter()
+        self.names.iter().flatten()
     }
 }
 
@@ -245,6 +219,16 @@ mod tests {
 
         let taken_words: Vec<String> = source.into_iter().map(Word::to_string).collect();
         assert_eq!(taken_words, vec!["let", "season", "profile"]);
+    }
+
+    #[test]
+    fn an_identifier_is_one_name_however_many_words_it_is_made_of() {
+        let text = "let season_profile = text.is_empty();";
+
+        let source = Source::from(text);
+
+        let names = source.names().len();
+        assert_eq!(names, 4);
     }
 
     #[test]

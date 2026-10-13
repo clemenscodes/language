@@ -3,10 +3,12 @@ pub(crate) mod vocabulary;
 
 pub use error::Error;
 
+use crate::core::language::vocabulary::Name;
 use crate::core::language::vocabulary::Source;
 use crate::core::language::vocabulary::Term;
 use crate::core::language::vocabulary::Vocabulary;
 use crate::core::language::vocabulary::Word;
+use crate::core::language::vocabulary::name;
 use crate::core::language::vocabulary::term;
 use crate::core::language::vocabulary::word;
 use ddd::{DomainLayer, Entity, Layered, Specification, ValueObject};
@@ -60,6 +62,16 @@ impl Language {
         Ok(Self { vocabulary, terms })
     }
 
+    pub fn try_admit_names<IntoNames, IntoName>(self, names: IntoNames) -> Result<Self, Error>
+    where
+        IntoNames: IntoIterator<Item = IntoName>,
+        IntoName: TryInto<Name, Error = name::Error>,
+    {
+        let vocabulary = self.vocabulary.try_admit_names(names)?;
+        let terms = self.terms;
+        Ok(Self { vocabulary, terms })
+    }
+
     pub(crate) fn terms(&self) -> impl Iterator<Item = (String, String)> + '_ {
         self.terms
             .values()
@@ -103,6 +115,40 @@ mod tests {
         let response = language.try_admit(["not a word"]);
 
         assert!(response.is_err());
+    }
+
+    #[test]
+    fn letters_that_are_no_name_are_admitted_by_nobody() {
+        let language = Language::default();
+
+        let response = language.try_admit_names(["is empty"]);
+
+        let text = String::from("is empty");
+        let name = name::Error::Name { text };
+        let vocabulary = vocabulary::Error::Name { name };
+        assert_eq!(response, Err(Error::Vocabulary { vocabulary }));
+    }
+
+    #[test]
+    fn an_admitted_name_satisfies_the_language() {
+        let language = Language::default();
+
+        let language = language.try_admit_names(["as_bytes"]).unwrap();
+
+        let source = Source::from("as_bytes");
+        let fit = language.is_satisfied_by(&source);
+        assert!(fit);
+    }
+
+    #[test]
+    fn a_word_of_an_admitted_name_does_not_satisfy_the_language_on_its_own() {
+        let language = Language::default();
+
+        let language = language.try_admit_names(["as_bytes"]).unwrap();
+
+        let source = Source::from("bytes");
+        let fit = language.is_satisfied_by(&source);
+        assert!(!fit);
     }
 
     #[test]

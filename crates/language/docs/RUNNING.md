@@ -27,7 +27,7 @@ The library publishes six names.
 
 | Name | What it is |
 |---|---|
-| `Language` | a vocabulary, built with `try_define` for a term and its definition and `try_admit` for a word without one, and joined with another by `\|` |
+| `Language` | a vocabulary, built with `try_define` for a term and its definition, `try_admit` for a word without one and `try_admit_names` for an identifier that is let through without being taken apart, and joined with another by `\|` |
 | `Context` | one directory and its language, from `(directory, language)` under `crates`, from `(root, directory, language)` under any root, and from `(context, names)` with the names of foreign languages it may also use |
 | `Foreign` | the words of one third party crate, from `(name, language)` |
 | `Languages` | every language of a repository, from `(contexts, foreign)`, joined with Rust's own words |
@@ -44,6 +44,9 @@ Which language a source is checked against follows from its path. A context is a
 directory under its root, and the gate merges that context's language with Rust's own
 vocabulary, with every foreign language the context names, and with one language for
 every third party crate the source's `Cargo.toml` names.
+
+An identifier one of these languages admits as a name is let through. Every other
+identifier is taken apart, and each of its words has to be in one of them.
 
 ## The press
 
